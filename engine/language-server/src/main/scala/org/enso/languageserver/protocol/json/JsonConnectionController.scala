@@ -21,12 +21,18 @@ import org.enso.languageserver.filemanager.PathWatcherProtocol
 import org.enso.languageserver.io.InputOutputApi._
 import org.enso.languageserver.io.OutputKind.{StandardError, StandardOutput}
 import org.enso.languageserver.io.{InputOutputApi, InputOutputProtocol}
-import org.enso.languageserver.monitoring.MonitoringApi.Ping
+import org.enso.languageserver.monitoring.MonitoringApi.{
+  InitializationNotify,
+  Ping
+}
 import org.enso.languageserver.refactoring.RefactoringApi.RenameProject
 import org.enso.languageserver.requesthandler._
 import org.enso.languageserver.requesthandler.capability._
 import org.enso.languageserver.requesthandler.io._
-import org.enso.languageserver.requesthandler.monitoring.PingHandler
+import org.enso.languageserver.requesthandler.monitoring.{
+  InitializationNotificationHandler,
+  PingHandler
+}
 import org.enso.languageserver.requesthandler.refactoring.RenameProjectHandler
 import org.enso.languageserver.requesthandler.session.InitProtocolConnectionHandler
 import org.enso.languageserver.requesthandler.text._
@@ -58,7 +64,9 @@ import org.enso.languageserver.session.SessionApi.{
 import org.enso.languageserver.text.TextApi._
 import org.enso.languageserver.text.TextProtocol
 import org.enso.languageserver.util.UnhandledLogging
+import org.enso.polyglot.runtime.Runtime.Api.InitializedNotification
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /** An actor handling communications between a single client and the language
@@ -83,6 +91,7 @@ class JsonConnectionController(
   val stdErrController: ActorRef,
   val stdInController: ActorRef,
   val runtimeConnector: ActorRef,
+  initializationFinished: Future[Unit],
   requestTimeout: FiniteDuration = 10.seconds
 ) extends Actor
     with Stash
@@ -245,6 +254,10 @@ class JsonConnectionController(
         ),
         requestTimeout
       ),
+      InitializationNotify -> InitializationNotificationHandler.props(
+        initializationFinished,
+        requestTimeout
+      ),
       AcquireCapability -> AcquireCapabilityHandler
         .props(capabilityRouter, requestTimeout, rpcSession),
       ReleaseCapability -> ReleaseCapabilityHandler
@@ -330,6 +343,7 @@ object JsonConnectionController {
     stdErrController: ActorRef,
     stdInController: ActorRef,
     runtimeConnector: ActorRef,
+    initializationFinished: Future[Unit],
     requestTimeout: FiniteDuration = 10.seconds
   ): Props =
     Props(
@@ -344,6 +358,7 @@ object JsonConnectionController {
         stdErrController,
         stdInController,
         runtimeConnector,
+        initializationFinished,
         requestTimeout
       )
     )
