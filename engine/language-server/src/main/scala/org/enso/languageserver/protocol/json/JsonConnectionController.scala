@@ -43,16 +43,16 @@ import org.enso.languageserver.requesthandler.visualisation.{
 }
 import org.enso.languageserver.runtime.ContextRegistryProtocol
 import org.enso.languageserver.runtime.ExecutionApi._
+import org.enso.languageserver.runtime.VisualisationApi.{
+  AttachVisualisation,
+  DetachVisualisation,
+  ModifyVisualisation
+}
 import org.enso.languageserver.search.SearchApi.{
   Completion,
   GetSuggestionsDatabase,
   GetSuggestionsDatabaseVersion,
   InvalidateSuggestionsDatabase
-}
-import org.enso.languageserver.runtime.VisualisationApi.{
-  AttachVisualisation,
-  DetachVisualisation,
-  ModifyVisualisation
 }
 import org.enso.languageserver.search.{SearchApi, SearchProtocol}
 import org.enso.languageserver.session.JsonSession
@@ -64,7 +64,6 @@ import org.enso.languageserver.session.SessionApi.{
 import org.enso.languageserver.text.TextApi._
 import org.enso.languageserver.text.TextProtocol
 import org.enso.languageserver.util.UnhandledLogging
-import org.enso.polyglot.runtime.Runtime.Api.InitializedNotification
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -255,8 +254,7 @@ class JsonConnectionController(
         requestTimeout
       ),
       InitializationNotify -> InitializationNotificationHandler.props(
-        initializationFinished,
-        requestTimeout
+        initializationFinished
       ),
       AcquireCapability -> AcquireCapabilityHandler
         .props(capabilityRouter, requestTimeout, rpcSession),
